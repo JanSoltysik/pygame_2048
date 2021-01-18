@@ -1,44 +1,43 @@
 import numpy as np
+from typing import Callable, Dict
 
 
 class Grid:
     def __init__(self, *, grid_size: int = 4, max_tile: int = 2048) -> None:
-        self.grid_size = grid_size
-        self.max_tile = max_tile
+        self.grid_size: int = grid_size
+        self.max_tile: int = max_tile
+        self.score: int = 0
 
-        self.grid = np.zeros((grid_size, grid_size), dtype=np.int16)
+        self.grid: np.ndarray = np.zeros((grid_size, grid_size), dtype=np.int16)
 
-    def move(self, direction: str) -> np.ndarray:
-        if direction == 'w':
-            return self.moveUp()
-        elif direction == 's':
-            return self.moveDown()
-        elif direction == 'a':
-            return self.moveLeft()
-        elif direction == 'd':
-            return self.moveRight()
+        self.move_map: Dict[str, Callable[[Grid], None]] = {
+            'w': self.moveUp,
+            's': self.moveDown,
+            'a': self.moveLeft,
+            'd': self.moveRight
+        }
 
-    def get_status(self) -> str:
-        if self.max_tile in self.grid:
-            return "WIN"
+    def move(self, direction: str) -> None:
+        return self.move_map.get(direction, lambda *args: None)()
 
-        for i in range(4):
-            for j in range(4):
+    def is_win(self) -> bool:
+        return self.max_tile in self.grid
+
+    def is_lose(self) -> bool:
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
                 # is marge possible
-                if j != 3 and self.grid[i, j] == self.grid[i, j + 1] or \
-                   i != 3 and self.grid[i, j] == self.grid[i + 1, j]:
-                    return "PLAY"
+                if j != self.grid_size - 1 and self.grid[i, j] == self.grid[i, j + 1] or \
+                   i != self.grid_size - 1 and self.grid[i, j] == self.grid[i + 1, j]:
+                    return False
 
-        if 0 not in self.grid:
-            return "LOSE"
-        else:
-            return "PLAY"
+        return 0 not in self.grid
 
-    def generate_twos(self, iters: int = 1) -> None:
-        for _ in range(iters):
-            x, y = np.random.randint(0, len(self.grid), size=2)
-            while self.grid[x, y] != 0:
-                x, y = np.random.randint(0, len(self.grid), size=2)
+    def generate_twos(self, number_of_twos: int = 1) -> None:
+        non_zero_indices: np.ndarray = np.column_stack(np.where(self.grid == 0))
+
+        for ind in np.random.randint(0, non_zero_indices.shape[0], size=number_of_twos):
+            x, y = non_zero_indices[ind]
 
             if self.grid.sum() in (0, 2):
                 self.grid[x, y] = 2
@@ -46,16 +45,18 @@ class Grid:
                 self.grid[x, y] = np.random.choice((2, 4))
 
     def moveLeft(self) -> None:
-        self.shiftLeft()
+        self.shift_left()
 
-        for i in range(4):
-            for j in range(3):
+        for i in range(self.grid_size):
+            for j in range(self.grid_size - 1):
                 if self.grid[i, j] == self.grid[i, j + 1] and self.grid[i, j] != 0:
                     self.grid[i, j] *= 2
                     self.grid[i, j + 1] = 0
-                    j = 0
 
-        self.shiftLeft()
+                    self.score += self.grid[i, j]
+                    # j = 0
+
+        self.shift_left()
 
     def moveUp(self) -> None:
         self.rotateLeft()
@@ -63,40 +64,35 @@ class Grid:
         self.rotateRight()
 
     def moveRight(self) -> None:
-        self.shiftRight()
+        self.shift_right()
 
-        for i in range(4):
-            for j in range(3, 0, -1):
+        for i in range(self.grid_size):
+            for j in range(self.grid_size - 1, 0, -1):
                 if self.grid[i, j] == self.grid[i, j - 1] and self.grid[i, j] != 0:
                     self.grid[i, j] *= 2
                     self.grid[i, j - 1] = 0
-                    j = 0
+
+                    self.score += self.grid[i, j]
+                    # j = 0
 
     def moveDown(self) -> None:
         self.rotateLeft()
         self.moveLeft()
-        self.shiftRight()
+        self.shift_right()
         self.rotateRight()
 
-    def shiftLeft(self) -> None:
-        for i in range(4):
-            nums, count = [], 0
-            for j in range(4):
-                if self.grid[i, j] != 0:
-                    nums.append(self.grid[i, j])
-                    count += 1
-            # nums.extend([0] * (4 - count))
-            self.grid[i] = np.array(nums + ([0] * (4 - count)))
+    def shift_grid(self, direction: int) -> None:
+        mask = self.grid != 0
+        flipped_mask = mask.sum(1, keepdims=True) > np.arange(self.grid_size - 1, -1, -1)
+        flipped_mask = flipped_mask[:, ::direction]
+        self.grid[flipped_mask] = self.grid[mask]
+        self.grid[~flipped_mask] = 0
 
-    def shiftRight(self) -> None:
-        for i in range(4):
-            nums, count = [], 0
-            for j in range(4):
-                if self.grid[i, j] != 0:
-                    nums.append(self.grid[i, j])
-                    count += 1
+    def shift_left(self) -> None:
+        self.shift_grid(-1)
 
-            self.grid[i] = np.array(([0] * (4 - count)) + nums)
+    def shift_right(self) -> None:
+        self.shift_grid(1)
 
     def rotateLeft(self) -> None:
         self.grid = np.rot90(self.grid)
@@ -107,11 +103,8 @@ class Grid:
     def __str__(self) -> str:
         return str(self.grid)
 
+    def __repr__(self) -> str:
+        return str(self)
+
     def __getitem__(self, item) -> np.int16:
         return self.grid[item[0], item[1]]
-
-
-if __name__ == "__main__":
-    grid = Grid()
-    print(grid)
-    print(str(grid[0, 2]))
