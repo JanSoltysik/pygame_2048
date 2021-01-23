@@ -21,8 +21,8 @@ if __name__ == "__main__":
     game = Game(config)
     try:
         game.show_menu()
-    except pygame.error:
-        pass
+    except pygame.error as pygame_error:
+        print(str(pygame_error))
     finally:
         config['best_score'] = int(game.best_score)
         with open('settings/config.json', 'w', encoding='utf-8') as f:

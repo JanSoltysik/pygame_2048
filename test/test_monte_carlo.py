@@ -97,7 +97,7 @@ class MCTSTestCase(unittest.TestCase):
             ind = self.bot()
             search_move_list[ind]()
             self.grid.generate_twos(number_of_twos=1)
-            # print(self.grid)
+            print(self.grid)
 
         self.assertTrue(self.grid.is_win())
         self.assertFalse(self.grid.is_lose())

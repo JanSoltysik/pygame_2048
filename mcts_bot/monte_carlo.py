@@ -63,7 +63,7 @@ class MonteCarloTreeSearch:
 
     def __init__(self, search_grid: 'Grid', *,
                  searches_per_move: int = 20,
-                 moves_per_search: int = 10) -> None:
+                 moves_per_search: int = 15) -> None:
         """
         Parameters
         ----------
