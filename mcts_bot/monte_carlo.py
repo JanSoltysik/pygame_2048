@@ -1,7 +1,11 @@
+"""
+File with a implementation of a MonteCarloTreeSearch bot.
+"""
 import copy
-import numpy as np  # type: ignore
 from multiprocessing import Pool
 from typing import List, Callable
+
+import numpy as np  # type: ignore
 
 from utils.grid import Grid
 
@@ -51,20 +55,28 @@ class MonteCarloTreeSearch:
         Grid for which search will be performed.
     searches_per_move: int
         Number of searches performed for each possible grid's move.
+    moves_per_search: int
+        Max number of moves performed for one search.
     number_of_moves: int
         Number of all possible moves.
     """
-    def __init__(self, search_grid: 'Grid', *, searches_per_move: int = 25) -> None:
+
+    def __init__(self, search_grid: 'Grid', *,
+                 searches_per_move: int = 20,
+                 moves_per_search: int = 10) -> None:
         """
         Parameters
         ----------
-        grid: Grid
+        search_grid: Grid
             Grid for which search will be performed.
         searches_per_move: int, optional
             Number of searches performed for each possible grid's move.
+        moves_per_search: int, optional
+            Max number of moves performed for one search.
         """
         self.grid: Grid = search_grid
         self.searches_per_move: int = searches_per_move
+        self.moves_per_search: int = moves_per_search
         self.number_of_moves: int = 4
 
     def search_for_one_move(self, search_grid: Grid, move_index: int) -> int:
@@ -95,10 +107,12 @@ class MonteCarloTreeSearch:
         search_grid.generate_twos(number_of_twos=1)
         current_grid: np.ndarray = np.copy(search_grid.grid)
         current_score: int = search_grid.score
-        for later_move in range(self.searches_per_move):
+        for _ in range(self.searches_per_move):
             search_grid.grid = np.copy(current_grid)
             search_grid.score = current_score
-            while not search_grid.is_win() and not search_grid.is_lose():
+            for _ in range(self.moves_per_search):
+                if search_grid.is_win() or search_grid.is_lose():
+                    break
                 is_valid = make_random_move(search_moves)
                 if is_valid:
                     search_grid.generate_twos(number_of_twos=1)
@@ -106,49 +120,26 @@ class MonteCarloTreeSearch:
 
         return search_score
 
-    def __call__(self) -> int:
+    def __call__(self, asynchronous: bool = True) -> int:
         """
         Execute search for each possible move. And then best move is selected.
 
+        Parameters
+        ----------
+        asynchronous: bool, optional
+            If True all the scores are calculated in parallel.
         Returns
         -------
             Index of a move for which best score was returned.
         """
-        print(self.grid)
         grids_lists = [copy.deepcopy(self.grid) for _ in range(self.number_of_moves)]
-        #scores = []
-        #for i in range(self.number_of_moves):
-        #    scores.append(self.search_for_one_move(grids_lists[i], i))
-        with Pool(processes=self.number_of_moves) as pool:
-            scores = pool.starmap(self.search_for_one_move, zip(grids_lists, range(self.number_of_moves)))
-        """
-        t = []
-        for i in range(self.number_of_moves):
-            t.append(ThreadWithReturnValue(target=self.search_for_one_move, args=(grids_lists[i], i)))
-            t[i].start()
-        scores = []
-        for th in t:
-            scores.append(th.join())
-        """
 
+        if asynchronous:
+            with Pool(processes=self.number_of_moves) as pool:
+                scores: List[int] = pool.starmap(self.search_for_one_move,
+                                                 zip(grids_lists, range(self.number_of_moves)))
+        else:
+            scores = []
+            for i in range(self.number_of_moves):
+                scores.append(self.search_for_one_move(grids_lists[i], i))
         return np.argmax(scores)
-
-
-if __name__ == "__main__":
-    grid = Grid()
-    grid.generate_twos(number_of_twos=2)
-    mcts = MonteCarloTreeSearch(grid, searches_per_move=25)
-    all_moves = list(grid.move_map.values())
-    while True:
-        next_move = mcts()
-        all_moves[next_move]()
-        if grid.is_win():
-            print('win')
-            break
-        if grid.is_lose():
-            print('lost')
-            break
-        grid.generate_twos(number_of_twos=1)
-        print(grid)
-
-    print(grid)

@@ -1,6 +1,11 @@
+"""
+A file with definitions helpful in creating game's UI.
+"""
+
 import copy
-import pygame
 from typing import Tuple
+
+import pygame
 
 
 ColorVector = Tuple[int, int, int]
@@ -24,9 +29,9 @@ class Button:
         A tuple of ints which represents color of button when mouse is over it.
     text_color: Tuple[int, int, int]
         A tuple of ints which represents color of the text displayed on the button.
-    x: int
+    x_cord: int
         The x coordinates of button o the pygame's screen.
-    y: int
+    y_cord: int
         The y coordinates of button o the pygame's screen.
     width: int
         The width of the button.
@@ -36,14 +41,14 @@ class Button:
         The text displayed on the button.
     radius: float
         The radius of circle used to create round vertices.
-    BLACK: Tuple[int, int, int]
+    black: Tuple[int, int, int]
         A tuple of ints which represents black color.
-    WHITE: Tuple[int, int, int]
+    white: Tuple[int, int, int]
         A tuple of ints which represents white color.
     """
     def __init__(self, screen: pygame.surface.Surface, font: pygame.font.Font,
-                 color: ColorVector, over_color: ColorVector,  text_color: ColorVector,
-                 x: int, y: int, width: int, height: int, text: str, *,
+                 color: ColorVector, over_color: ColorVector, text_color: ColorVector,
+                 x_cord: int, y_cord: int, width: int, height: int, text: str, *,
                  radius: float = 0.4) -> None:
         """
         Parameters
@@ -58,9 +63,9 @@ class Button:
             A tuple of ints which represents color of button when mouse is over it.
         text_color: Tuple[int, int, int]
             Color of a button's text.
-        x: int
+        x_cord: int
             The x coordinates of button o the pygame's screen.
-        y: int
+        y_cord: int
             The y coordinates of button o the pygame's screen.
         width: int
             The width of the button.
@@ -77,14 +82,14 @@ class Button:
         self.current_color: ColorVector = copy.deepcopy(color)
         self.over_color: ColorVector = over_color
         self.text_color: ColorVector = text_color
-        self.x: int = x
-        self.y: int = y
+        self.x_cord: int = x_cord
+        self.y_cord: int = y_cord
         self.width: int = width
         self.height: int = height
         self.text: str = text
         self.radius: float = radius
-        self.BLACK: ColorVector = (0, 0, 0)
-        self.WHITE: ColorVector = (255, 255, 255)
+        self.black: ColorVector = (0, 0, 0)
+        self.white: ColorVector = (255, 255, 255)
 
     def draw(self) -> None:
         """
@@ -92,14 +97,17 @@ class Button:
         """
         self.draw_round_rectangle()
 
-        text: pygame.surface.Surface = self.font.render(self.text, True, self.text_color)
-        self.screen.blit(text, (self.x + (self.width / 2 - text.get_width() / 2),
-                                self.y + (self.height/2 - text.get_height()/2)))
+        text: pygame.surface.Surface = self.font.render(self.text,
+                                                        True, self.text_color)
+        self.screen.blit(text,
+                         (self.x_cord + (self.width / 2 - text.get_width() / 2),
+                          self.y_cord + (self.height / 2 - text.get_height() / 2)))
 
     def handle_event(self, event: pygame.event.Event, mouse_position: Tuple[int, int]) -> bool:
         """
         Handles pygame event.
-        If mouse is over a button it changes color, and if mouse is over a button and it is clicked it returns a True.
+        If mouse is over a button it changes color,
+        and if mouse is over a button and it is clicked it returns a True.
 
         Parameters
         ----------
@@ -140,13 +148,14 @@ class Button:
         bool
             True if a given position is over a button.
         """
-        return self.x < pos[0] < self.x + self.width and self.y < pos[1] < self.y + self.height
+        return self.x_cord < pos[0] < self.x_cord + self.width and\
+               self.y_cord < pos[1] < self.y_cord + self.height
 
     def draw_round_rectangle(self) -> None:
         """
         Draws a rectangle with a round vertices.
         """
-        rect: pygame.rect.Rect = pygame.rect.Rect(self.x, self.y, self.width, self.height)
+        rect: pygame.rect.Rect = pygame.rect.Rect(self.x_cord, self.y_cord, self.width, self.height)
         color: pygame.color.Color = pygame.color.Color(*self.color)
         alpha: int = color.a
         pos: Tuple[int, int] = rect.topleft
@@ -154,8 +163,9 @@ class Button:
         rect.topleft = 0, 0
         rectangle: pygame.Surface = pygame.Surface(rect.size, pygame.SRCALPHA)
 
-        circle: pygame.surface.Surface = pygame.surface.Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
-        pygame.draw.ellipse(circle, self.BLACK, circle.get_rect(), 0)
+        circle: pygame.surface.Surface =\
+            pygame.surface.Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
+        pygame.draw.ellipse(circle, self.black, circle.get_rect(), 0)
         circle = pygame.transform.smoothscale(
             circle, [int(min(rect.size) * self.radius)] * 2)
 
@@ -167,10 +177,10 @@ class Button:
         radius.bottomleft = rect.bottomleft
         rectangle.blit(circle, radius)
 
-        rectangle.fill(self.BLACK, rect.inflate(-radius.w, 0))
-        rectangle.fill(self.BLACK, rect.inflate(0, -radius.h))
+        rectangle.fill(self.black, rect.inflate(-radius.w, 0))
+        rectangle.fill(self.black, rect.inflate(0, -radius.h))
 
         rectangle.fill(color, special_flags=pygame.BLEND_RGBA_MAX)
-        rectangle.fill((*self.WHITE, alpha), special_flags=pygame.BLEND_RGBA_MIN)
+        rectangle.fill((*self.white, alpha), special_flags=pygame.BLEND_RGBA_MIN)
 
         self.screen.blit(rectangle, pos)

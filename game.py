@@ -1,17 +1,20 @@
+"""
+A file implementing main menu of the game as well as game loop.
+"""
 import time
+from typing import Tuple, List, Callable
+
 import pygame
 import numpy as np  # type: ignore
-from typing import Tuple, List, Callable
 
 from utils.grid import Grid
 from utils.ui import Button, ColorVector
-from utils.monte_carlo import MonteCarloTreeSearch, get_moves_list
+from mcts_bot.monte_carlo import MonteCarloTreeSearch, get_moves_list
 
 
 class Game:
     """
     A class implementing main menu and graphics for 2048.
-    
     Attributes
     ---------
     config: dict
@@ -27,7 +30,7 @@ class Game:
     use_bot: bool
         Boolean which determines if player or bot is playing.
     text_font: pygame.font.Font:
-        Font used in texts displayed on pygame's screeen.
+        Font used in texts displayed on pygame's screen.
     button_font: pygame.font.Font:
         Font used in button's text.
     title_font: pygame.font.Font:
@@ -64,42 +67,52 @@ class Game:
         pygame.init()
 
         # pygame's attributes
-        self.text_font: pygame.font.Font = pygame.font.SysFont(self.config['font'],
-                                                               self.config['text_font_size'], bold=True)
-        self.button_font: pygame.font.Font = pygame.font.SysFont(self.config['font'],
-                                                                 self.config['button_font_size'], bold=True)
-        self.title_font: pygame.font.Font = pygame.font.SysFont(self.config['font'],
-                                                                self.config['title_font_size'], bold=True)
-        self.screen: pygame.surface.Surface = pygame.display.set_mode((config['size'],
-                                                                       config['size'] + self.config["header_height"]))
+        self.text_font: pygame.font.Font =\
+            pygame.font.SysFont(self.config['font'],
+                                self.config['text_font_size'], bold=True)
+        self.button_font: pygame.font.Font =\
+            pygame.font.SysFont(self.config['font'],
+                                self.config['button_font_size'], bold=True)
+        self.title_font: pygame.font.Font =\
+            pygame.font.SysFont(self.config['font'],
+                                self.config['title_font_size'], bold=True)
+        self.screen: pygame.surface.Surface =\
+            pygame.display.set_mode((config['size'],
+                                     config['size'] + self.config["header_height"]))
 
         # Button's
-        self.menu: Button = Button(self.screen, self.title_font,
-                                   self.config["color"]["2048"], self.config["color"]["2048"],
-                                   self.config["color"]["white"],
-                                   10, 15, 150, 120, "2048")
+        self.menu: Button =\
+            Button(self.screen, self.title_font,
+                   self.config["color"]["2048"], self.config["color"]["2048"],
+                   self.config["color"]["white"],
+                   10, 15, 150, 120, "2048")
 
-        self.play: Button = Button(self.screen, self.button_font,
-                                   self.config["color"]["play"], self.config["color"]["64"],
-                                   self.config["color"]["black"],
-                                   105, 400, 300, 45, "Play")
-        self.monte_carlo: Button = Button(self.screen, self.button_font,
-                                          self.config["color"]["play"], self.config["color"]["64"],
-                                          self.config["color"]["black"],
-                                          105, 500, 300, 45, "Monte Carlo")
-        self.reset: Button = Button(self.screen, self.button_font,
-                                    self.config["color"]["play"], self.config["color"]["64"],
-                                    self.config["color"]["black"],
-                                    105, 250, 300, 45, "Menu")
-        self.current_score: Button = Button(self.screen, self.button_font,
-                                            self.config['color']['score'], self.config["color"]["64"],
-                                            self.config["color"]["white"],
-                                            190, 15, 150, 60, "SCORE: 0")
+        self.play: Button = \
+            Button(self.screen, self.button_font,
+                   self.config["color"]["play"], self.config["color"]["64"],
+                   self.config["color"]["black"],
+                   105, 400, 300, 45, "Play")
+        self.monte_carlo: Button =\
+            Button(self.screen, self.button_font,
+                   self.config["color"]["play"], self.config["color"]["64"],
+                   self.config["color"]["black"],
+                   105, 500, 300, 45, "Monte Carlo")
+        self.reset: Button =\
+            Button(self.screen, self.button_font,
+                   self.config["color"]["play"], self.config["color"]["64"],
+                   self.config["color"]["black"],
+                   105, 250, 300, 45, "Menu")
+        self.current_score: Button =\
+            Button(self.screen, self.button_font,
+                   self.config['color']['score'], self.config["color"]["64"],
+                   self.config["color"]["white"],
+                   190, 15, 150, 60, "SCORE: 0")
 
-        self.best: Button = Button(self.screen, self.button_font,
-                                   self.config['color']['score'], self.config["color"]["64"],
-                                   self.config["color"]["white"],
-                                   345, 15, 150, 60, "BEST: 0")
+        self.best: Button =\
+            Button(self.screen, self.button_font,
+                   self.config['color']['score'], self.config["color"]["64"],
+                   self.config["color"]["white"],
+                   345, 15, 150, 60, "BEST: 0")
 
         # initialize pygame
         pygame.display.set_caption('2048')
@@ -109,13 +122,14 @@ class Game:
 
     def check_game_status(self) -> None:
         """
-        Check if game is won/lost. If it is true message is displayed and return to menu via button is enabled.
+        Check if game is won/lost. If it is true message is
+        displayed and return to menu via button is enabled.
         """
         if self.grid.is_win() or self.grid.is_lose():
             size: int = self.config['size']
-            s = pygame.Surface((size, size + self.config["header_height"]), pygame.SRCALPHA)
-            s.fill(self.config['color']['over'])
-            self.screen.blit(s, (0, 0))
+            screen = pygame.Surface((size, size + self.config["header_height"]), pygame.SRCALPHA)
+            screen.fill(self.config['color']['over'])
+            self.screen.blit(screen, (0, 0))
 
             info: str = 'YOU WIN!' if self.grid.is_win() else 'GAME OVER!'
 
@@ -137,7 +151,7 @@ class Game:
         self.grid = Grid()
         self.display()
 
-        self.screen.blit(self.text_font.render("NEW GAME!", True, self.text_color), (130, 225))
+        self.screen.blit(self.text_font.render("NEW GAME!", True, self.text_color), (140, 375))
         pygame.display.update()
 
         time.sleep(1)
@@ -182,8 +196,10 @@ class Game:
                     else:
                         text_color = self.config['color']['light']
 
-                    self.screen.blit(self.text_font.render(f"{self.grid[i, j]:>4}", True, text_color),
-                                     (j * box + 4 * padding, i * box + 7 * padding + self.config["header_height"]))
+                    self.screen.blit(self.text_font.render(
+                        f"{self.grid[i, j]:>4}", True, text_color),
+                        (j * box + 4 * padding,
+                         i * box + 7 * padding + self.config["header_height"]))
 
             pygame.display.update()
 
@@ -209,7 +225,7 @@ class Game:
             List containing all possible grid's move.
         """
         current_grid: np.ndarray = np.copy(self.grid.grid)
-        all_moves[bot()]()
+        all_moves[bot(asynchronous=False)]()
         self.update_grid(current_grid)
 
     def player_move(self, event: pygame.event.Event) -> None:
@@ -229,11 +245,13 @@ class Game:
             self.best_score = max(self.best_score, self.grid.score)
             self.update_grid(current_grid)
 
-    def gameLoop(self) -> None:
+    def game_loop(self) -> None:
         """
-        Game loop in which either player or bot makes moves until games is finished.
-        After game is over by clicking menu button user can go back to main menu.
-        Loop can be broken either by pressing q, exiting created game's window or pressing return button.
+        Game loop in which either player or bot make
+        moves until games is finished. After game is over by clicking
+        menu button user can go back to main menu. Loop can be broken
+        either by pressing q, exiting created game's window or pressing
+        return button.
         """
         self.start_game()
         bot: MonteCarloTreeSearch = MonteCarloTreeSearch(self.grid)
@@ -263,7 +281,7 @@ class Game:
             self.screen.fill(self.config["color"]["background"])
 
             self.screen.blit(pygame.transform.scale(
-                pygame.image.load("images/icon.ico"), (200, 200)), (155, 50))
+                pygame.image.load("images/icon.ico"), (300, 300)), (100, 50))
 
             self.play.draw()
             self.monte_carlo.draw()
@@ -276,10 +294,10 @@ class Game:
 
                 if self.play.handle_event(event, pos):
                     self.use_bot = False
-                    self.gameLoop()
+                    self.game_loop()
                 if self.monte_carlo.handle_event(event, pos):
                     self.use_bot = True
-                    self.gameLoop()
+                    self.game_loop()
 
     @staticmethod
     def check_for_quit(event: pygame.event.Event) -> bool:

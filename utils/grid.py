@@ -1,6 +1,10 @@
-import numpy as np  # type: ignore
+"""
+A file with implementation of 2048 logic.
+"""
 from enum import Enum
 from typing import Callable, Dict, Tuple
+
+import numpy as np  # type: ignore
 
 
 class Direction(Enum):
@@ -12,6 +16,16 @@ class Direction(Enum):
     """
     LEFT = 1
     RIGHT = -1
+
+
+class MoveDirection(Enum):
+    """
+    Enum used to determine move direction.
+    """
+    UP = "w"
+    DOWN = "s"
+    LEFT = "a"
+    RIGHT = "d"
 
 
 class Grid:
@@ -48,10 +62,10 @@ class Grid:
         self.grid: np.ndarray = np.zeros((grid_size, grid_size), dtype=np.int16)
 
         self.move_map: Dict[str, Callable[[], bool]] = {
-            'w': self.moveUp,
-            's': self.moveDown,
-            'a': self.moveLeft,
-            'd': self.moveRight
+            MoveDirection.UP.value: self.move_up,
+            MoveDirection.DOWN.value: self.move_down,
+            MoveDirection.LEFT.value: self.move_left,
+            MoveDirection.RIGHT.value: self.move_right
         }
 
     def move(self, direction: str) -> bool:
@@ -109,20 +123,22 @@ class Grid:
         """
         non_zero_indices: np.ndarray = np.column_stack(np.where(self.grid == 0))
         try:
-            for ind in np.random.randint(0, non_zero_indices.shape[0], size=number_of_twos):
-                x, y = non_zero_indices[ind]
+            for ind in np.random.choice(
+                    range(non_zero_indices.shape[0]), number_of_twos, replace=False):
+                x_cord, y_cord = non_zero_indices[ind]
 
                 if self.grid.sum() in (0, 2):
-                    self.grid[x, y] = 2
+                    self.grid[x_cord, y_cord] = 2
                 else:
-                    self.grid[x, y] = np.random.choice((2, 4))
+                    self.grid[x_cord, y_cord] = np.random.choice((2, 4))
         except ValueError:
             # there isn't any zero elements in the grid
             pass
 
     def merge_same_neighbours(self, direction: Direction) -> None:
         """
-        Merge neighbours in the grid with the same value if the made move is pushing them towards each other.
+        Merge neighbours in the grid with the same value
+        if the made move is pushing them towards each other.
 
         Parameters
         ----------
@@ -138,7 +154,7 @@ class Grid:
                     self.grid[i, j + direction.value] = 0
                     self.score += self.grid[i, j]
 
-    def moveLeft(self) -> bool:
+    def move_left(self) -> bool:
         """
         Moves and merge all the elements in the grid to the left side.
 
@@ -155,7 +171,7 @@ class Grid:
 
         return not np.array_equal(current_grid, self.grid)
 
-    def moveRight(self) -> bool:
+    def move_right(self) -> bool:
         """
         Moves and merge all the elements in the grid to the right side.
 
@@ -170,7 +186,7 @@ class Grid:
 
         return not np.array_equal(current_grid, self.grid)
 
-    def moveUp(self) -> bool:
+    def move_up(self) -> bool:
         """
         Moves and merge all the elements in the grid towards the up.
 
@@ -180,13 +196,13 @@ class Grid:
             True if move valid, False otherwise.
         """
         current_grid: np.ndarray = np.copy(self.grid)
-        self.rotateLeft()
-        self.moveLeft()
-        self.rotateRight()
+        self.rotate_left()
+        self.move_left()
+        self.rotate_right()
 
         return not np.array_equal(current_grid, self.grid)
 
-    def moveDown(self) -> bool:
+    def move_down(self) -> bool:
         """
         Moves and merge all the elements in the grid towards the down.
 
@@ -196,10 +212,10 @@ class Grid:
             True if move valid, False otherwise.
         """
         current_grid: np.ndarray = np.copy(self.grid)
-        self.rotateLeft()
-        self.moveLeft()
+        self.rotate_left()
+        self.move_left()
         self.shift_right()
-        self.rotateRight()
+        self.rotate_right()
 
         return not np.array_equal(current_grid, self.grid)
 
@@ -213,7 +229,8 @@ class Grid:
             A direction in which elements will be shifted.
         """
         mask: np.ndarray = self.grid != 0
-        flipped_mask: np.ndarray = mask.sum(1, keepdims=True) > np.arange(self.grid_size - 1, -1, -1)
+        flipped_mask: np.ndarray =\
+            mask.sum(1, keepdims=True) > np.arange(self.grid_size - 1, -1, -1)
         flipped_mask = flipped_mask[:, ::-direction.value]
         self.grid[flipped_mask] = self.grid[mask]
         self.grid[~flipped_mask] = 0
@@ -230,17 +247,25 @@ class Grid:
         """
         self.shift_grid(Direction.RIGHT)
 
-    def rotateLeft(self) -> None:
+    def rotate_left(self) -> None:
         """
         Rotate gird by 90 degrees counter-clockwise.
         """
         self.grid = np.rot90(self.grid)
 
-    def rotateRight(self) -> None:
+    def rotate_right(self) -> None:
         """
         Rotate gird by 90 degrees clockwise.
         """
         self.grid = np.rot90(self.grid, k=3)
+
+    def reset(self) -> None:
+        """
+        Reset the game state to a starting state.
+        """
+        self.grid = np.zeros((self.grid_size, self.grid_size),
+                             dtype=np.int16)
+        self.score = 0
 
     def __str__(self) -> str:
         """
@@ -279,3 +304,16 @@ class Grid:
             Value of a cell ath a given position.
         """
         return self.grid[item[0], item[1]]
+
+    def __setitem__(self, item: Tuple[int, int], value: int) -> None:
+        """
+        Set grid element on a given position to a acquired value.
+
+        Parameters
+        ----------
+        item: Tuple[int, int]
+            Position of a given cell in a grid.
+        value: int
+            New value for a grid element.
+        """
+        self.grid[item[0], item[1]] = value
