@@ -2,7 +2,7 @@
 File with a implementation of a MonteCarloTreeSearch bot.
 """
 import copy
-from multiprocessing import Pool
+from multiprocessing.pool import Pool
 from typing import List, Callable
 
 import numpy as np  # type: ignore
@@ -135,9 +135,11 @@ class MonteCarloTreeSearch:
         grids_lists = [copy.deepcopy(self.grid) for _ in range(self.number_of_moves)]
 
         if asynchronous:
-            with Pool(processes=self.number_of_moves) as pool:
-                scores: List[int] = pool.starmap(self.search_for_one_move,
-                                                 zip(grids_lists, range(self.number_of_moves)))
+            pool: Pool = Pool(processes=self.number_of_moves)
+            scores: List[int] = pool.starmap(self.search_for_one_move,
+                                             zip(grids_lists, range(self.number_of_moves)))
+            pool.close()
+            pool.join()
         else:
             scores = []
             for i in range(self.number_of_moves):

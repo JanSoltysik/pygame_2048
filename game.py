@@ -115,11 +115,16 @@ class Game:
             screen.fill(self.config['color']['over'])
             self.screen.blit(screen, (0, 0))
 
-            info: str = 'YOU WIN!' if self.grid.is_win() else 'GAME OVER!'
+            if self.grid.is_win():
+                info: str = 'YOU WIN!'
+                coords: Tuple[int, int] = (160, 180)
+            else:
+                info = 'GAME OVER!'
+                coords = (140, 180)
 
             self.screen.blit(self.fonts["text_font"].render(info, True,
                                                             self.config["color"]["dark"]),
-                             (140, 180))
+                             coords)
             while True:
                 self.buttons["reset"].draw(self.screen, "Menu")
                 pygame.display.update()
@@ -206,7 +211,7 @@ class Game:
             List containing all possible grid's move.
         """
         current_grid: np.ndarray = np.copy(self.grid.grid)
-        all_moves[bot(asynchronous=False)]()
+        all_moves[bot(asynchronous=True)]()
         self.update_grid(current_grid)
 
     def player_move(self, event: pygame.event.Event) -> None:
