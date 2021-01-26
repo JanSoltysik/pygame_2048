@@ -23,4 +23,6 @@ environment 2048 implementation execute:
 python -m unittest
 ```
 ---
-![game_img](images/game.png)
+<p align="center">
+  <img src="images/game.png">
+</p>
